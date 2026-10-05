@@ -23,14 +23,12 @@ ENV EXTERNAL_HOOK_FILES="/data/hooks/gc-after-exec.js"
 ##ENV PUPPETEER_EXECUTABLE_PATH=/usr/lib/chromium/chromium
 # ENV PUPPETEER_ARGS="--no-sandbox --disable-dev-shm-usage --headless=new"
 
-RUN  npm install -g npm@9 && \
-     mkdir -p /opt/n8n-custom-nodes && \
-     cd /opt/n8n-custom-nodes && \
-     npm install --omit=dev \
-     n8n-nodes-puppeteer \
-     n8n-nodes-discord-trigger && \
-     chown -R node:node /opt/n8n-custom-nodes
-
+RUN npm install -g npm@9 && \
+    mkdir -p /opt/n8n-custom-nodes && \
+    cd /opt/n8n-custom-nodes && \
+    npm install --omit=dev \
+      n8n-nodes-puppeteer && \
+    chown -R node:node /opt/n8n-custom-nodes
 
 # create the folder; real fix happens at runtime after mount
 RUN mkdir -p /home/node/.n8n
