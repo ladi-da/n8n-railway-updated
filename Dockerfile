@@ -1,44 +1,32 @@
-# FROM docker.n8n.io/n8nio/n8n:latest
 FROM n8nio/n8n:latest
+
 USER root
 
-# Copy your hook into /data/hooks
+# Copy external execution hook
 COPY n8n-hooks /data/hooks
 
-# Enable garbage collection exposure and register hook file
+# Enable explicit GC + register hook
 ENV NODE_OPTIONS="--expose-gc"
 ENV EXTERNAL_HOOK_FILES="/data/hooks/gc-after-exec.js"
 
-# (unchanged) packages
-##RUN apk add --no-cache \
-##    chromium nss glib freetype harfbuzz ca-certificates \
-##    ttf-freefont ttf-liberation font-noto-emoji udev dumb-init \
-##    libx11 libxcomposite libxdamage libxext libxi libxrandr libxfixes \
-##    libxcb libgcc libstdc++ alsa-lib gtk+3.0 pango \
-##    su-exec  # <— add this
-
-##RUN if [ -x /usr/bin/chromium ]; then ln -sf /usr/bin/chromium /usr/bin/chromium-browser; fi
-
-##ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-##ENV PUPPETEER_EXECUTABLE_PATH=/usr/lib/chromium/chromium
-# ENV PUPPETEER_ARGS="--no-sandbox --disable-dev-shm-usage --headless=new"
-
-RUN npm install -g npm@9 && \
+# Install Puppeteer community node.
+# Build dependencies are required for native modules under the newer Node version,
+# then removed so they don't remain in the final image.
+RUN apk add --no-cache --virtual .build-deps \
+        python3 \
+        make \
+        g++ && \
     mkdir -p /opt/n8n-custom-nodes && \
     cd /opt/n8n-custom-nodes && \
     npm install --omit=dev \
-      n8n-nodes-puppeteer && \
-    chown -R node:node /opt/n8n-custom-nodes
+        n8n-nodes-puppeteer && \
+    chown -R node:node /opt/n8n-custom-nodes && \
+    apk del .build-deps
 
-# create the folder; real fix happens at runtime after mount
+# Create n8n data directory
 RUN mkdir -p /home/node/.n8n
 
-##COPY docker-custom-entrypoint.sh /docker-custom-entrypoint.sh
-##RUN chmod +x /docker-custom-entrypoint.sh
-
-# IMPORTANT: stay root so entrypoint can chown the mounted volume
-# USER node   <-- remove this line if you had it
-
+# Load custom/community nodes
 ENV N8N_CUSTOM_EXTENSIONS="/opt/n8n-custom-nodes"
 
-##ENTRYPOINT ["/docker-custom-entrypoint.sh"]
+# Stay root because your runtime-mounted volume needs root/chown handling
